@@ -5,7 +5,7 @@ from src.models.geolocation_models import DelivererLocation, OrderTracking, Geof
 from datetime import datetime, timedelta
 import math
 
-geolocation_bp = Blueprint(\'geolocation\', __name__)
+geolocation_bp = Blueprint('geolocation', __name__)
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     """Calcular distância entre duas coordenadas usando fórmula de Haversine"""
@@ -33,43 +33,43 @@ def estimate_arrival_time(distance_km, avg_speed_kmh=25):
     
     return datetime.utcnow() + timedelta(minutes=time_minutes)
 
-@geolocation_bp.route(\'/update-location\', methods=[\'POST\'])
+@geolocation_bp.route('/update-location', methods=['POST'])
 @jwt_required()
 def update_deliverer_location():
     try:
         user_id = get_jwt_identity()
         user = User.query.get(user_id)
         
-        if not user or user.user_type != \'deliverer\':
-            return jsonify({\'error\': \'Acesso negado\'}), 403
+        if not user or user.user_type != 'deliverer':
+            return jsonify({'error': 'Acesso negado'}), 403
         
         deliverer = Deliverer.query.filter_by(user_id=user_id).first()
         
         if not deliverer or not deliverer.is_online:
-            return jsonify({\'error\': \'Entregador deve estar online\'}), 403
+            return jsonify({'error': 'Entregador deve estar online'}), 403
         
         data = request.get_json()
         
         # Validar dados obrigatórios
-        required_fields = [\'latitude\', \'longitude\']
+        required_fields = ['latitude', 'longitude']
         for field in required_fields:
             if field not in data:
-                return jsonify({\'error\': f\'Campo {field} é obrigatório\'}), 400
+                return jsonify({'error': f'Campo {field} é obrigatório'}), 400
         
         # Desativar localização anterior
         DelivererLocation.query.filter_by(
             deliverer_id=user_id,
             is_active=True
-        ).update({\'is_active\': False})
+        ).update({'is_active': False})
         
         # Criar nova localização
         location = DelivererLocation(
             deliverer_id=user_id,
-            latitude=float(data[\'latitude\']),
-            longitude=float(data[\'longitude\']),
-            accuracy=data.get(\'accuracy\'),
-            speed=data.get(\'speed\'),
-            heading=data.get(\'heading\')
+            latitude=float(data['latitude']),
+            longitude=float(data['longitude']),
+            accuracy=data.get('accuracy'),
+            speed=data.get('speed'),
+            heading=data.get('heading')
         )
         
         db.session.add(location)
@@ -77,7 +77,7 @@ def update_deliverer_location():
         # Atualizar tracking de pedidos ativos
         active_orders = Order.query.filter_by(
             deliverer_id=user_id,
-            status=\'delivering\'
+            status='delivering'
         ).all()
         
         for order in active_orders:
@@ -87,7 +87,7 @@ def update_deliverer_location():
             dest_lon = -46.6333
             
             distance = calculate_distance(
-                float(data[\'latitude\']), float(data[\'longitude\']),
+                float(data['latitude']), float(data['longitude']),
                 dest_lat, dest_lon
             )
             
@@ -96,9 +96,9 @@ def update_deliverer_location():
             tracking = OrderTracking(
                 order_id=order.id,
                 deliverer_id=user_id,
-                latitude=float(data[\'latitude\']),
-                longitude=float(data[\'longitude\']),
-                status=\'in_transit\',
+                latitude=float(data['latitude']),
+                longitude=float(data['longitude']),
+                status='in_transit',
                 estimated_arrival=estimated_arrival,
                 distance_remaining=distance
             )
@@ -108,15 +108,15 @@ def update_deliverer_location():
         db.session.commit()
         
         return jsonify({
-            \'message\': \'Localização atualizada com sucesso\',
-            \'location\': location.to_dict()
+            'message': 'Localização atualizada com sucesso',
+            'location': location.to_dict()
         }), 200
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({\'error\': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
-@geolocation_bp.route(\'/track-order/<int:order_id>\', methods=[\'GET\'])
+@geolocation_bp.route('/track-order/<int:order_id>', methods=['GET'])
 @jwt_required()
 def track_order(order_id):
     try:
@@ -126,24 +126,24 @@ def track_order(order_id):
         order = Order.query.get(order_id)
         
         if not order:
-            return jsonify({\'error\': \'Pedido não encontrado\'}), 404
+            return jsonify({'error': 'Pedido não encontrado'}), 404
         
         # Verificar permissão de acesso
         has_access = False
-        if user.user_type == \'client\' and order.client_id == user_id:
+        if user.user_type == 'client' and order.client_id == user_id:
             has_access = True
-        elif user.user_type == \'store\':
+        elif user.user_type == 'store':
             from src.models.wendy_models import Store
             store = Store.query.filter_by(user_id=user_id).first()
             if store and order.store_id == store.id:
                 has_access = True
-        elif user.user_type == \'deliverer\' and order.deliverer_id == user_id:
+        elif user.user_type == 'deliverer' and order.deliverer_id == user_id:
             has_access = True
-        elif user.user_type == \'admin\':
+        elif user.user_type == 'admin':
             has_access = True
         
         if not has_access:
-            return jsonify({\'error\': \'Acesso negado\'}), 403
+            return jsonify({'error': 'Acesso negado'}), 403
         
         # Buscar tracking mais recente
         latest_tracking = OrderTracking.query.filter_by(
@@ -164,31 +164,31 @@ def track_order(order_id):
         ).order_by(OrderTracking.created_at.desc()).limit(10).all()
         
         return jsonify({
-            \'order_id\': order_id,
-            \'status\': order.status,
-            \'latest_tracking\': latest_tracking.to_dict() if latest_tracking else None,
-            \'current_location\': current_location.to_dict() if current_location else None,
-            \'tracking_history\': [t.to_dict() for t in tracking_history],
-            \'deliverer_name\': order.deliverer.name if order.deliverer else None
+            'order_id': order_id,
+            'status': order.status,
+            'latest_tracking': latest_tracking.to_dict() if latest_tracking else None,
+            'current_location': current_location.to_dict() if current_location else None,
+            'tracking_history': [t.to_dict() for t in tracking_history],
+            'deliverer_name': order.deliverer.name if order.deliverer else None
         }), 200
         
     except Exception as e:
-        return jsonify({\'error\': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
-@geolocation_bp.route(\'/nearby-deliverers\', methods=[\'GET\'])
+@geolocation_bp.route('/nearby-deliverers', methods=['GET'])
 @jwt_required()
 def get_nearby_deliverers():
     try:
         user_id = get_jwt_identity()
         user = User.query.get(user_id)
         
-        if not user or user.user_type not in [\'store\', \'admin\']:
-            return jsonify({\'error\': \'Acesso negado\'}), 403
+        if not user or user.user_type not in ['store', 'admin']:
+            return jsonify({'error': 'Acesso negado'}), 403
         
         # Parâmetros de busca
-        latitude = float(request.args.get(\'latitude\', -23.5505))
-        longitude = float(request.args.get(\'longitude\', -46.6333))
-        radius_km = float(request.args.get(\'radius\', 5))  # Raio padrão de 5km
+        latitude = float(request.args.get('latitude', -23.5505))
+        longitude = float(request.args.get('longitude', -46.6333))
+        radius_km = float(request.args.get('radius', 5))  # Raio padrão de 5km
         
         # Buscar entregadores online com localização recente
         recent_time = datetime.utcnow() - timedelta(minutes=10)
@@ -212,78 +212,78 @@ def get_nearby_deliverers():
             
             if distance <= radius_km:
                 deliverer_data = location.to_dict()
-                deliverer_data[\'distance_km\'] = round(distance, 2)
-                deliverer_data[\'estimated_arrival\'] = estimate_arrival_time(distance).isoformat()
+                deliverer_data['distance_km'] = round(distance, 2)
+                deliverer_data['estimated_arrival'] = estimate_arrival_time(distance).isoformat()
                 nearby_deliverers.append(deliverer_data)
         
         # Ordenar por distância
-        nearby_deliverers.sort(key=lambda x: x[\'distance_km\'])
+        nearby_deliverers.sort(key=lambda x: x['distance_km'])
         
         return jsonify({
-            \'deliverers\': nearby_deliverers,
-            \'total\': len(nearby_deliverers),
-            \'search_radius_km\': radius_km,
-            \'search_center\': {
-                \'latitude\': latitude,
-                \'longitude\': longitude
+            'deliverers': nearby_deliverers,
+            'total': len(nearby_deliverers),
+            'search_radius_km': radius_km,
+            'search_center': {
+                'latitude': latitude,
+                'longitude': longitude
             }
         }), 200
         
     except Exception as e:
-        return jsonify({\'error\': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
-@geolocation_bp.route(\'/delivery-zones\', methods=[\'GET\'])
+@geolocation_bp.route('/delivery-zones', methods=['GET'])
 def get_delivery_zones():
     try:
         zones = GeofenceArea.query.filter_by(
-            area_type=\'delivery_zone\',
+            area_type='delivery_zone',
             is_active=True
         ).all()
         
         return jsonify({
-            \'zones\': [zone.to_dict() for zone in zones]
+            'zones': [zone.to_dict() for zone in zones]
         }), 200
         
     except Exception as e:
-        return jsonify({\'error\': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
-@geolocation_bp.route(\'/delivery-zones\', methods=[\'POST\'])
+@geolocation_bp.route('/delivery-zones', methods=['POST'])
 @jwt_required()
 def create_delivery_zone():
     try:
         user_id = get_jwt_identity()
         user = User.query.get(user_id)
         
-        if not user or user.user_type != \'admin\':
-            return jsonify({\'error\': \'Acesso negado\'}), 403
+        if not user or user.user_type != 'admin':
+            return jsonify({'error': 'Acesso negado'}), 403
         
         data = request.get_json()
         
         # Validar dados obrigatórios
-        required_fields = [\'name\', \'center_latitude\', \'center_longitude\', \'radius\']
+        required_fields = ['name', 'center_latitude', 'center_longitude', 'radius']
         for field in required_fields:
             if field not in data:
-                return jsonify({\'error\': f\'Campo {field} é obrigatório\'}), 400
+                return jsonify({'error': f'Campo {field} é obrigatório'}), 400
         
         zone = GeofenceArea(
-            name=data[\'name\'],
-            center_latitude=float(data[\'center_latitude\']),
-            center_longitude=float(data[\'center_longitude\']),
-            radius=float(data[\'radius\']),
-            area_type=data.get(\'area_type\', \'delivery_zone\')
+            name=data['name'],
+            center_latitude=float(data['center_latitude']),
+            center_longitude=float(data['center_longitude']),
+            radius=float(data['radius']),
+            area_type=data.get('area_type', 'delivery_zone')
         )
         
         db.session.add(zone)
         db.session.commit()
         
         return jsonify({
-            \'message\': \'Zona de entrega criada com sucesso\',
-            \'zone\': zone.to_dict()
+            'message': 'Zona de entrega criada com sucesso',
+            'zone': zone.to_dict()
         }), 201
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({\'error\': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
 @geolocation_bp.route('/admin/all-deliverers', methods=['GET'])
 @jwt_required()
