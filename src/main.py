@@ -48,7 +48,7 @@ app.register_blueprint(notifications_bp, url_prefix='/api/notifications')
 app.register_blueprint(reports_bp, url_prefix='/api/reports')
 
 # Configuração do banco de dados
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(os.path.dirname(__file__), 'database', 'app.db')}"
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
