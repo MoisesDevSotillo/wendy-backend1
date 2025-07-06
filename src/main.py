@@ -19,7 +19,6 @@ from src.routes.chat import chat_bp
 from src.routes.ratings import ratings_bp
 from src.routes.notifications import notifications_bp
 from src.routes.reports import reports_bp
-from src.routes.store import store_bp  # Novo blueprint para lojistas
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
