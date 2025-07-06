@@ -29,7 +29,8 @@ app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'sta
 app.config['SECRET_KEY'] = 'wendy-marketplace-secret-key-2025'
 app.config['JWT_SECRET_KEY'] = 'wendy-jwt-secret-key-2025'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False  # Token não expira para desenvolvimenCORS - permitir todas as origens para desenvolvimento
-CORS(app, origins="*")
+CORS(app, origins= 
+     ["https://wendy-site-admin.vercel.app"])
 
 # JWT
 jwt = JWTManager(app)
