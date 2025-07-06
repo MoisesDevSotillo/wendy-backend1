@@ -51,7 +51,7 @@ app.register_blueprint(chat_bp, url_prefix='/api/chat')
 app.register_blueprint(ratings_bp, url_prefix='/api/ratings')
 app.register_blueprint(notifications_bp, url_prefix='/api/notifications')
 app.register_blueprint(reports_bp, url_prefix='/api/reports')
-app.register_blueprint(store_bp, url_prefix='/api/store')  # Novo prefixo para lojistas
+
 
 # Configuração do banco de dados
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
