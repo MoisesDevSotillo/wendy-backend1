@@ -1,8 +1,5 @@
 import os
 import sys
-# DON\"T CHANGE THIS !!!
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
 from flask import Flask, send_from_directory, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
@@ -22,16 +19,23 @@ from src.routes.chat import chat_bp
 from src.routes.ratings import ratings_bp
 from src.routes.notifications import notifications_bp
 from src.routes.reports import reports_bp
+from src.routes.store import store_bp  # Novo blueprint para lojistas
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
 
 # Configurações
 app.config['SECRET_KEY'] = 'wendy-marketplace-secret-key-2025'
 app.config['JWT_SECRET_KEY'] = 'wendy-jwt-secret-key-2025'
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False  # Token não expira para desenvolvimenCORS - permitir todas as origens para desenvolvimento
-CORS(app, origins= 
-     ["https://wendy-site-admin.vercel.app" , 
-     "https://site-lojista.vercel.app"])
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False
+
+# CORS - permitir os 3 frontends
+CORS(app, origins=[
+    "https://wendy-site-admin.vercel.app",
+    "https://wendy-site-lojista.vercel.app",
+    "https://wendy-site-app.vercel.app"
+])
 
 # JWT
 jwt = JWTManager(app)
@@ -48,6 +52,7 @@ app.register_blueprint(chat_bp, url_prefix='/api/chat')
 app.register_blueprint(ratings_bp, url_prefix='/api/ratings')
 app.register_blueprint(notifications_bp, url_prefix='/api/notifications')
 app.register_blueprint(reports_bp, url_prefix='/api/reports')
+app.register_blueprint(store_bp, url_prefix='/api/store')  # Novo prefixo para lojistas
 
 # Configuração do banco de dados
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
@@ -95,7 +100,8 @@ def serve(path):
                     'chat': '/api/chat/*',
                     'ratings': '/api/ratings/*',
                     'notifications': '/api/notifications/*',
-                    'reports': '/api/reports/*'
+                    'reports': '/api/reports/*',
+                    'store': '/api/store/*'
                 },
                 'new_features': [
                     'Real-time location tracking',
